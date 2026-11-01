@@ -28,5 +28,5 @@ BRIEF_TOP_K = 6
  
 # Token-aware chunking. 
 # The embedding model has a max sequence length of 128 tokens. 
-CHUNK_SIZE = 100 
+CHUNK_SIZE = 120
 CHUNK_OVERLAP = 20

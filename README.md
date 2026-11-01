@@ -154,7 +154,7 @@ Parameter berikut diatur dalam kode, bukan melalui environment variable:
 | `EMBEDDING_MODEL` | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | Model embedding dan tokenizer |
 | `TOP_K` | `4` | Jumlah potongan yang diambil untuk pertanyaan |
 | `BRIEF_TOP_K` | `6` | Jumlah potongan yang diambil untuk brief |
-| `CHUNK_SIZE` | `100` | Target ukuran maksimal potongan berdasarkan tokenizer |
+| `CHUNK_SIZE` | `120` | Target ukuran maksimal potongan berdasarkan tokenizer; konfigurasi akhir praktikum |
 | `CHUNK_OVERLAP` | `20` | Tumpang tindih token antar potongan |
 
 `llm.py` mengatur temperature generasi ke `0.2`.
@@ -518,3 +518,171 @@ Muat ulang halaman setelah perubahan asset frontend. Pastikan file `static/vendo
 ### Tampilan font berbeda
 
 Font berasal dari Google Fonts. Jika akses jaringan ke layanan tersebut tidak tersedia, browser menggunakan font fallback; fungsi aplikasi dan rendering Markdown lokal tetap tersedia.
+
+---
+
+# Laporan Praktikum: RAG Parameter Exploration
+
+> **Catatan pelaksanaan:** Experiment 1–4 dijalankan dengan PDF yang sama, dua pertanyaan yang sama, serta model embedding dan LLM yang sama. Seluruh 24 output generation berasal dari Groq melalui jalur prompt aplikasi. Untuk setiap pengaturan chunk, koleksi Qdrant terisolasi dibuat baru dan PDF di-ingest ulang; database Qdrant kerja pengguna tidak dihapus atau diubah.
+
+## Informasi Eksperimen
+
+- **Nama PDF:** `Laporan EDA Clevora.docx.pdf`
+- **Jumlah halaman:** 10 halaman; 9 halaman memiliki teks yang dapat diekstrak.
+- **Topik:** temuan survei konsumen untuk memvalidasi kebutuhan fitur Clevora, termasuk kemudahan memberi ulasan, sensitivitas rating, dan kebutuhan web profil UMKM.
+- **Embedding:** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+- **LLM default aplikasi:** `openai/gpt-oss-120b` melalui Groq.
+
+### Pertanyaan pengujian
+
+1. Berapa persen responden menyatakan proses manual Google Maps terlalu merepotkan untuk memberikan ulasan?
+2. Berapa rata-rata kesediaan pelanggan memberikan ulasan jika tersedia Tap NFC atau Scan QR di kasir?
+
+### Konfigurasi baseline aplikasi
+
+| Parameter | Nilai |
+| --- | --- |
+| Temperature | 0.2 |
+| TOP_K | 4 |
+| CHUNK_SIZE | 100 token |
+| CHUNK_OVERLAP | 20 token |
+| Embedding model | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` |
+| LLM model | `openai/gpt-oss-120b` |
+
+## Experiment 1 - Temperature
+
+| Temperature | Q1 actual output | Q2 actual output | Observation |
+| --- | --- | --- | --- |
+| 0.0 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata kesediaan memberikan ulasan dengan Tap NFC/Scan QR adalah **4,05 dari 5,00** (halaman 4). | Q2 ringkas dan faktual; Q1 tidak terjawab dari context retrieval. |
+| 0.2 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata kesediaan memberikan ulasan dengan Tap NFC/Scan QR adalah **4,05 dari 5,00** (halaman 4). | Fakta sama dengan temperature 0.0; susunan sitasi sedikit berbeda. |
+| 0.8 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata kesediaan memberikan ulasan dengan Tap NFC/Scan QR adalah **4,05 / 5,00** (halaman 4). | Fakta tetap sama; wording sedikit berubah. Tidak terlihat jawaban lebih panjang atau kreatif pada dua pertanyaan ini. |
+
+Retrieval sama di ketiga percobaan: Q1 mengambil halaman 2 (0.6996), 7 (0.6794), 10 (0.6240), dan 9 (0.6090); Q2 mengambil halaman 4 (0.8205), 5 (0.7264), 3 (0.7260), dan 10 (0.7075).
+
+**Kesimpulan Experiment Temperature:** pada dua pertanyaan ini perubahan temperature hanya memberi perubahan kecil pada wording, sementara fakta Q2 tetap konsisten dan Q1 tetap tidak ditemukan. Temperature dipakai saat generation di `llm.py`; hasil retrieval dan similarity score tidak berubah. Nilai 0.2 dipilih untuk konfigurasi akhir karena jawabannya faktual dan konsisten, bukan karena terbukti unggul mutlak.
+
+## Experiment 2 - TOP_K
+
+Hasil diukur dari collection baru dengan baseline `CHUNK_SIZE = 100` dan `CHUNK_OVERLAP = 20`. `Context` adalah jumlah karakter pada blok context yang dibangun aplikasi, sebelum dikirim ke LLM.
+
+| TOP_K | Q1: sumber / similarity score | Q1 context | Q1 actual LLM output | Q2: sumber / similarity score | Q2 context | Q2 actual LLM output |
+| --- | --- | ---: | --- | --- | ---: | --- |
+| 1 | p. 2 / 0.6996 | 588 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205 | 305 karakter | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+| 4 | p. 2 / 0.6996; p. 7 / 0.6794; p. 10 / 0.6240; p. 9 / 0.6090 | 1.930 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205; p. 5 / 0.7264; p. 3 / 0.7260; p. 10 / 0.7075 | 1.519 karakter | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+| 8 | p. 2 / 0.6996; p. 7 / 0.6794; p. 10 / 0.6240; p. 9 / 0.6090; p. 10 / 0.5649; p. 6 / 0.5646; p. 10 / 0.5322; p. 10 / 0.5314 | 3.883 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205; p. 5 / 0.7264; p. 3 / 0.7260; p. 10 / 0.7075; p. 4 / 0.5882; p. 3 / 0.5366; p. 5 / 0.5228; p. 9 / 0.5163 | 3.273 karakter | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+
+**Observasi:** TOP_K menaikkan jumlah chunk dan panjang context. Jawaban untuk kedua pertanyaan tidak berubah ketika TOP_K dinaikkan: Q1 tetap tidak ditemukan dan Q2 tetap menjawab angka yang benar. Chunk tambahan tidak memperbaiki jawaban pada pengujian ini, walaupun context jadi lebih panjang; karena itu TOP_K lebih besar tidak selalu lebih baik.
+
+## Experiment 3 - Chunk Size
+
+Pengukuran menggunakan `CHUNK_OVERLAP = 20`, `TOP_K = 4`, dan dua pertanyaan yang sama. Angka similarity adalah cosine similarity hasil embedding lokal; halaman menunjukkan halaman dari chunk yang diambil. Tiap baris skor memuat empat chunk teratas untuk pertanyaan terkait.
+
+| CHUNK_SIZE | Chunks stored | Q1: sources / scores | Q1 actual output | Q2: sources / scores | Q2 actual output |
+| --- | ---: | --- | --- | --- | --- |
+| 50 | 67 | 2 (0.7879), 3 (0.7428), 7 (0.6958), 10 (0.6858) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8311), 5 (0.7264), 2 (0.7123) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 dari 5,00** (hal. 4). |
+| 100 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 3 (0.7260), 10 (0.7075) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 dari 5,00** (hal. 4). |
+| 120 | 23 | 10 (0.7315), 2 (0.6996), 7 (0.6794), 3 (0.6575) | “47,8% responden menyatakan proses ulasan manual di Google Maps terlalu merepotkan.” (hal. 10) | 4 (0.8205), 5 (0.7553), 10 (0.6263) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+
+**Jawaban acuan dari isi PDF (bukan output LLM):**
+
+- Q1: 47.8% responden menyebut prosesnya terlalu merepotkan.
+- Q2: kesediaan memberi ulasan dengan akses Tap NFC / Scan QR mendapat rata-rata 4.05 dari 5; 72.7% memberi skor 4 atau 5.
+
+**Observasi:** chunk lebih kecil menghasilkan lebih banyak potongan (67 dibanding 29 dan 23). Walaupun skor chunk teratas Q1 tertinggi pada ukuran 50, hanya ukuran 120 yang memberikan context cukup untuk menjawab Q1 dengan benar pada percobaan ini. Q2 terjawab konsisten di semua ukuran. Chunk kecil dapat membantu menemukan bagian spesifik, tetapi dapat memotong konteks pendukung; chunk lebih besar dapat mempertahankan konteks, meskipun jumlah potongan lebih sedikit.
+
+## Experiment 4 - Chunk Overlap
+
+Pengukuran menggunakan `CHUNK_SIZE = 100` dan `TOP_K = 4`.
+
+| CHUNK_OVERLAP | Chunks stored | Q1: sources / scores | Q1 actual output | Q2: sources / scores | Q2 actual output |
+| --- | ---: | --- | --- | --- | --- |
+| 0 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8300), 5 (0.7264), 10 (0.7075) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+| 20 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 3 (0.7260), 10 (0.7075) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 dari 5,00**, kenaikan +69,2% dari baseline (hal. 4). |
+| 40 | 32 | 3 (0.7545), 2 (0.6996), 7 (0.6794) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 2 (0.6714), 10 (0.6263) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+
+**Observasi:** overlap 40 menambah jumlah chunk dari 29 menjadi 32 dan meningkatkan skor chunk teratas Q1, tetapi tidak mengubah jawaban Q1 yang tidak ditemukan. Q2 terjawab di semua percobaan; skor tertinggi sedikit lebih tinggi pada overlap 0 (0.8300 dibanding 0.8205 pada overlap 20/40). Overlap menjaga konteks di batas chunk, tetapi overlap lebih besar tidak selalu meningkatkan hasil.
+
+### Transkrip Actual Output
+
+Output berikut disalin dari respons LLM aktual; spasi non-breaking dan baris baru dinormalisasi agar mudah dibaca.
+
+**Experiment 1 - Temperature**
+
+| Nilai | Pertanyaan | Actual output |
+| --- | --- | --- |
+| 0.0 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 0.0 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
+| 0.2 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 0.2 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 0.8 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 0.8 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+
+**Experiment 2 - TOP_K**
+
+| TOP_K | Pertanyaan | Actual output |
+| ---: | --- | --- |
+| 1 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 1 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Laporan EDA Clevora.docx.pdf, hal 4】. |
+| 4 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 4 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
+| 8 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 8 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+
+**Experiment 3 - Chunk Size** (`CHUNK_OVERLAP = 20`)
+
+| CHUNK_SIZE | Pertanyaan | Actual output |
+| ---: | --- | --- |
+| 50 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 50 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 100 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 100 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 120 | Q1 | 47,8 % responden menyatakan proses ulasan manual di Google Maps terlalu merepotkan. (Sumber: Laporan EDA Clevora, halaman 10) |
+| 120 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+
+**Experiment 4 - Chunk Overlap** (`CHUNK_SIZE = 100`)
+
+| CHUNK_OVERLAP | Pertanyaan | Actual output |
+| ---: | --- | --- |
+| 0 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 0 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 20 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 20 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** skor (kenaikan +69,2 % dibandingkan baseline)【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 40 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
+| 40 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** poin 【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+
+## Kesimpulan dan Jawaban Pertanyaan
+
+1. **Parameter yang paling terasa:** Chunk Size paling berpengaruh pada dua pertanyaan ini. Q1 tidak terjawab pada ukuran 50/100 tetapi terjawab pada ukuran 120; ukuran chunk juga mengubah jumlah chunks dari 67 menjadi 23.
+2. **Apakah temperature memengaruhi retrieval atau generation?** Temperature memengaruhi generation saja. Retrieval menghasilkan context terlebih dahulu; nilai temperature digunakan saat meminta LLM menyusun jawaban dari context tersebut.
+3. **Apakah TOP_K lebih besar selalu lebih baik?** Tidak. TOP_K lebih besar menambah context, tetapi juga berpotensi memasukkan chunk yang kurang relevan.
+4. **Apa yang terjadi ketika chunk size lebih kecil?** Jumlah chunk bertambah dan tiap potongan memuat konteks lebih sempit. Ini dapat membantu mengambil detail spesifik, tetapi dapat memisahkan informasi yang seharusnya dibaca bersama.
+5. **Apa fungsi chunk overlap?** Overlap mengulang sebagian token antar-potongan supaya konteks yang melintasi batas potongan tetap dapat ditemukan bersama.
+6. **Mengapa perubahan chunk size / overlap perlu ingestion ulang?** Keduanya menentukan teks yang dipotong dan di-embed. Mengubahnya tidak mengubah chunk dan vector yang telah tersimpan; dokumen harus dipecah dan di-embed ulang agar isi koleksi konsisten.
+7. **Mengapa temperature tidak perlu ingestion ulang?** Temperature hanya digunakan pada permintaan generation, sesudah retrieval. Ia tidak mengubah PDF, chunk, atau vector embedding.
+8. **Apakah ada satu konfigurasi terbaik untuk semua dokumen?** Tidak. Panjang dokumen, struktur, jenis pertanyaan, model embedding, dan konteks yang dibutuhkan berbeda-beda.
+
+### Final Configuration
+
+| Parameter | Pilihan |
+| --- | --- |
+| Temperature | 0.2 |
+| TOP_K | 4 |
+| CHUNK_SIZE | 120 |
+| CHUNK_OVERLAP | 20 |
+
+Konfigurasi ini dipilih untuk PDF dan dua pertanyaan ini: chunk size 120 satu-satunya yang menjawab Q1, TOP_K 4 menjaga context sedang dan Q2 terjawab benar, temperature 0.2 menghasilkan fakta yang konsisten, serta overlap 20 menjaga sambungan antar-chunk. Pilihan ini bukan konfigurasi terbaik universal.
+
+## Refleksi Pribadi - Draf untuk Ditinjau
+
+- **Bagian yang paling berbeda dari dugaan:** skor similarity chunk teratas tertinggi tidak otomatis menghasilkan jawaban benar. Chunk size 50 mendapat skor tinggi untuk Q1 tetapi LLM tidak menemukan jawabannya; ukuran 120 berhasil.
+- **Parameter yang ternyata berpengaruh:** chunk size mengubah jumlah potongan dan apakah informasi Q1 sampai ke context generation. Overlap 40 menambah jumlah chunk, tetapi tidak memperbaiki jawaban Q1 pada percobaan ini.
+- **Hubungan retrieval dan generation:** retrieval menentukan potongan bukti yang masuk ke context; generation menyusun jawaban menggunakan bukti tersebut. Generation tidak dapat mengoreksi fakta yang tidak berhasil diambil dan dapat menghasilkan jawaban kurang relevan bila context tidak sesuai.
+- **Eksperimen lanjutan:** membandingkan `TOP_K`, menguji pertanyaan dengan tipe berbeda, dan mengevaluasi retrieval terpisah dari kualitas jawaban generation.
+
+Refleksi ini disusun dari hasil eksperimen aktual pada PDF yang dipakai. Silakan sesuaikan dengan pendapat pribadi sebelum dikumpulkan.
+
+## Penggunaan AI
+
+- **AI tools yang digunakan:** AI assistant.
+- **Bantuan AI:** membantu membaca topik PDF, menyiapkan pertanyaan, menjalankan variasi parameter pada pipeline RAG, mencatat actual output dan metrik, serta menyusun dokumentasi dan interpretasi.
+- **Bagian yang harus diverifikasi sendiri:** meninjau kesimpulan dan refleksi sebelum dikumpulkan. API key tidak dimasukkan ke repository atau chat.
