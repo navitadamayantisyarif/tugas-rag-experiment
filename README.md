@@ -523,7 +523,7 @@ Font berasal dari Google Fonts. Jika akses jaringan ke layanan tersebut tidak te
 
 # Laporan Praktikum: RAG Parameter Exploration
 
-> **Catatan pelaksanaan:** Experiment 1–4 dijalankan dengan PDF yang sama, dua pertanyaan yang sama, serta model embedding dan LLM yang sama. Seluruh 24 output generation berasal dari Groq melalui jalur prompt aplikasi. Untuk setiap pengaturan chunk, koleksi Qdrant terisolasi dibuat baru dan PDF di-ingest ulang; database Qdrant kerja pengguna tidak dihapus atau diubah.
+> **Catatan pelaksanaan:** Experiment 1–4 dijalankan melalui server Uvicorn, unggah PDF multipart ke endpoint `/ingest`, dan pertanyaan ke endpoint `/ask`, dengan PDF serta dua pertanyaan yang sama. Seluruh 24 output generation berasal dari Groq melalui prompt aplikasi. Setiap variasi dijalankan pada server yang direstart dan koleksi Qdrant lokal yang baru; `qdrant_data/` dihapus setelah server berhenti, kemudian PDF diunggah/di-ingest ulang. Tidak ada database lama pengguna yang terhapus karena folder itu belum ada sebelum eksperimen dimulai.
 
 ## Informasi Eksperimen
 
@@ -553,13 +553,13 @@ Font berasal dari Google Fonts. Jika akses jaringan ke layanan tersebut tidak te
 
 | Temperature | Q1 actual output | Q2 actual output | Observation |
 | --- | --- | --- | --- |
-| 0.0 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata kesediaan memberikan ulasan dengan Tap NFC/Scan QR adalah **4,05 dari 5,00** (halaman 4). | Q2 ringkas dan faktual; Q1 tidak terjawab dari context retrieval. |
-| 0.2 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata kesediaan memberikan ulasan dengan Tap NFC/Scan QR adalah **4,05 dari 5,00** (halaman 4). | Fakta sama dengan temperature 0.0; susunan sitasi sedikit berbeda. |
-| 0.8 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata kesediaan memberikan ulasan dengan Tap NFC/Scan QR adalah **4,05 / 5,00** (halaman 4). | Fakta tetap sama; wording sedikit berubah. Tidak terlihat jawaban lebih panjang atau kreatif pada dua pertanyaan ini. |
+| 0.0 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata kesediaan memberi ulasan dengan Tap NFC/QR **4,05/5**; sumber halaman 4. | Q2 ringkas dan faktual; Q1 tidak terjawab dari context retrieval. |
+| 0.2 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata **4,05/5**, disebut naik **69,2% dari baseline**; sumber halaman 4. | Fakta sama dengan temperature 0.0; pada hasil ini Q2 juga menyertakan perbandingan baseline. |
+| 0.8 | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | Rata-rata **4,05/5**, disebut naik **69,2% dari baseline**; sumber halaman 4. | Fakta tetap sama; wording berubah sedikit, tidak tampak lebih kreatif pada dua pertanyaan ini. |
 
 Retrieval sama di ketiga percobaan: Q1 mengambil halaman 2 (0.6996), 7 (0.6794), 10 (0.6240), dan 9 (0.6090); Q2 mengambil halaman 4 (0.8205), 5 (0.7264), 3 (0.7260), dan 10 (0.7075).
 
-**Kesimpulan Experiment Temperature:** pada dua pertanyaan ini perubahan temperature hanya memberi perubahan kecil pada wording, sementara fakta Q2 tetap konsisten dan Q1 tetap tidak ditemukan. Temperature dipakai saat generation di `llm.py`; hasil retrieval dan similarity score tidak berubah. Nilai 0.2 dipilih untuk konfigurasi akhir karena jawabannya faktual dan konsisten, bukan karena terbukti unggul mutlak.
+**Kesimpulan Experiment Temperature:** pada dua pertanyaan ini fakta jawaban Q2 tetap konsisten dan Q1 tetap tidak ditemukan. Temperature mengubah wording dan seberapa banyak detail tambahan (nilai 0.2/0.8 menyebut kenaikan baseline). Temperature dipakai saat generation di `llm.py`; hasil retrieval dan similarity score tidak berubah. Nilai 0.2 dipilih untuk konfigurasi akhir karena tetap faktual dan menambahkan konteks kenaikan, bukan karena terbukti unggul mutlak.
 
 ## Experiment 2 - TOP_K
 
@@ -567,9 +567,9 @@ Hasil diukur dari collection baru dengan baseline `CHUNK_SIZE = 100` dan `CHUNK_
 
 | TOP_K | Q1: sumber / similarity score | Q1 context | Q1 actual LLM output | Q2: sumber / similarity score | Q2 context | Q2 actual LLM output |
 | --- | --- | ---: | --- | --- | ---: | --- |
-| 1 | p. 2 / 0.6996 | 588 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205 | 305 karakter | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
-| 4 | p. 2 / 0.6996; p. 7 / 0.6794; p. 10 / 0.6240; p. 9 / 0.6090 | 1.930 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205; p. 5 / 0.7264; p. 3 / 0.7260; p. 10 / 0.7075 | 1.519 karakter | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
-| 8 | p. 2 / 0.6996; p. 7 / 0.6794; p. 10 / 0.6240; p. 9 / 0.6090; p. 10 / 0.5649; p. 6 / 0.5646; p. 10 / 0.5322; p. 10 / 0.5314 | 3.883 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205; p. 5 / 0.7264; p. 3 / 0.7260; p. 10 / 0.7075; p. 4 / 0.5882; p. 3 / 0.5366; p. 5 / 0.5228; p. 9 / 0.5163 | 3.273 karakter | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+| 1 | p. 2 / 0.6996 | 588 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205 | 305 karakter | Rata-rata kesediaan Tap NFC/QR **4,05/5** (hal. 4). |
+| 4 | p. 2 / 0.6996; p. 7 / 0.6794; p. 10 / 0.6240; p. 9 / 0.6090 | 1.930 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205; p. 5 / 0.7264; p. 3 / 0.7260; p. 10 / 0.7075 | 1.519 karakter | Rata-rata kesediaan Tap NFC/QR **4,05/5** (hal. 4). |
+| 8 | p. 2 / 0.6996; p. 7 / 0.6794; p. 10 / 0.6240; p. 9 / 0.6090; p. 6 / 0.5646 | 3.883 karakter | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | p. 4 / 0.8205; p. 5 / 0.7264; p. 3 / 0.7260; p. 10 / 0.7075; p. 9 / 0.5163 | 3.273 karakter | Rata-rata kesediaan Tap NFC/QR **4,05/5** (hal. 4). |
 
 **Observasi:** TOP_K menaikkan jumlah chunk dan panjang context. Jawaban untuk kedua pertanyaan tidak berubah ketika TOP_K dinaikkan: Q1 tetap tidak ditemukan dan Q2 tetap menjawab angka yang benar. Chunk tambahan tidak memperbaiki jawaban pada pengujian ini, walaupun context jadi lebih panjang; karena itu TOP_K lebih besar tidak selalu lebih baik.
 
@@ -579,9 +579,9 @@ Pengukuran menggunakan `CHUNK_OVERLAP = 20`, `TOP_K = 4`, dan dua pertanyaan yan
 
 | CHUNK_SIZE | Chunks stored | Q1: sources / scores | Q1 actual output | Q2: sources / scores | Q2 actual output |
 | --- | ---: | --- | --- | --- | --- |
-| 50 | 67 | 2 (0.7879), 3 (0.7428), 7 (0.6958), 10 (0.6858) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8311), 5 (0.7264), 2 (0.7123) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 dari 5,00** (hal. 4). |
-| 100 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 3 (0.7260), 10 (0.7075) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 dari 5,00** (hal. 4). |
-| 120 | 23 | 10 (0.7315), 2 (0.6996), 7 (0.6794), 3 (0.6575) | “47,8% responden menyatakan proses ulasan manual di Google Maps terlalu merepotkan.” (hal. 10) | 4 (0.8205), 5 (0.7553), 10 (0.6263) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+| 50 | 67 | 2 (0.7879), 3 (0.7428), 7 (0.6958), 10 (0.6858) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8311), 5 (0.7264), 2 (0.7123) | Rata-rata kesediaan Tap NFC/QR **4,05/5**; sumber hal. 4. |
+| 100 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 3 (0.7260), 10 (0.7075) | Rata-rata kesediaan Tap NFC/QR **4,05/5**; sumber hal. 4. |
+| 120 | 23 | 10 (0.7315), 2 (0.6996), 7 (0.6794), 3 (0.6575) | “47,8% responden menyatakan proses ulasan manual di Google Maps terlalu merepotkan.” (sumber hal. 10) | 4 (0.8205), 5 (0.7553), 10 (0.6263) | Rata-rata kesediaan Tap NFC/QR **4,05/5**; sumber hal. 4. |
 
 **Jawaban acuan dari isi PDF (bukan output LLM):**
 
@@ -596,59 +596,59 @@ Pengukuran menggunakan `CHUNK_SIZE = 100` dan `TOP_K = 4`.
 
 | CHUNK_OVERLAP | Chunks stored | Q1: sources / scores | Q1 actual output | Q2: sources / scores | Q2 actual output |
 | --- | ---: | --- | --- | --- | --- |
-| 0 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8300), 5 (0.7264), 10 (0.7075) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
-| 20 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 3 (0.7260), 10 (0.7075) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 dari 5,00**, kenaikan +69,2% dari baseline (hal. 4). |
-| 40 | 32 | 3 (0.7545), 2 (0.6996), 7 (0.6794) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 2 (0.6714), 10 (0.6263) | Rata-rata kesediaan dengan Tap NFC/QR **4,05 / 5,00** (hal. 4). |
+| 0 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8300), 5 (0.7264), 10 (0.7075) | Rata-rata kesediaan Tap NFC/QR **4,05/5**; sumber hal. 4. |
+| 20 | 29 | 2 (0.6996), 7 (0.6794), 10 (0.6240), 9 (0.6090) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 3 (0.7260), 10 (0.7075) | Rata-rata kesediaan **4,05/5**, naik 69,2% dari baseline; sumber hal. 4. |
+| 40 | 32 | 3 (0.7545), 2 (0.6996), 7 (0.6794) | “Jawaban tidak ditemukan dalam dokumen yang diunggah.” | 4 (0.8205), 5 (0.7264), 2 (0.6714), 10 (0.6263) | Rata-rata kesediaan Tap NFC/QR **4,05/5**; sumber hal. 4. |
 
 **Observasi:** overlap 40 menambah jumlah chunk dari 29 menjadi 32 dan meningkatkan skor chunk teratas Q1, tetapi tidak mengubah jawaban Q1 yang tidak ditemukan. Q2 terjawab di semua percobaan; skor tertinggi sedikit lebih tinggi pada overlap 0 (0.8300 dibanding 0.8205 pada overlap 20/40). Overlap menjaga konteks di batas chunk, tetapi overlap lebih besar tidak selalu meningkatkan hasil.
 
 ### Transkrip Actual Output
 
-Output berikut disalin dari respons LLM aktual; spasi non-breaking dan baris baru dinormalisasi agar mudah dibaca.
+Output berikut disalin dari respons endpoint `/ask` pada aplikasi Uvicorn; spasi non-breaking dinormalisasi agar mudah dibaca.
 
 **Experiment 1 - Temperature**
 
 | Nilai | Pertanyaan | Actual output |
 | --- | --- | --- |
 | 0.0 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 0.0 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
+| 0.0 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
 | 0.2 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 0.2 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 0.2 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** poin (kenaikan +69,2% dibanding baseline)【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 | 0.8 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 0.8 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 0.8 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** skor (kenaikan +69,2% dibanding baseline)【Laporan EDA Clevora.docx.pdf, Page 4】. |
 
 **Experiment 2 - TOP_K**
 
 | TOP_K | Pertanyaan | Actual output |
 | ---: | --- | --- |
 | 1 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 1 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Laporan EDA Clevora.docx.pdf, hal 4】. |
+| 1 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Laporan EDA Clevora.docx.pdf, hal 4】. |
 | 4 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 4 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
+| 4 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 | 8 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 8 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 8 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 
 **Experiment 3 - Chunk Size** (`CHUNK_OVERLAP = 20`)
 
 | CHUNK_SIZE | Pertanyaan | Actual output |
 | ---: | --- | --- |
 | 50 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 50 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 50 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 | 100 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 100 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
-| 120 | Q1 | 47,8 % responden menyatakan proses ulasan manual di Google Maps terlalu merepotkan. (Sumber: Laporan EDA Clevora, halaman 10) |
-| 120 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 100 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Laporan EDA Clevora.docx.pdf, hal 4】. |
+| 120 | Q1 | 47,8% responden menyatakan proses ulasan manual di Google Maps terlalu merepotkan. (Sumber: Laporan EDA Clevora, halaman 10) |
+| 120 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 
 **Experiment 4 - Chunk Overlap** (`CHUNK_SIZE = 100`)
 
 | CHUNK_OVERLAP | Pertanyaan | Actual output |
 | ---: | --- | --- |
 | 0 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 0 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 0 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 | 20 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 20 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** skor (kenaikan +69,2 % dibandingkan baseline)【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 20 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** skor (kenaikan +69,2% dibanding baseline)【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 | 40 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 40 | Q2 | Rata‑rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** poin 【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
+| 40 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 
 ## Kesimpulan dan Jawaban Pertanyaan
 
@@ -672,6 +672,8 @@ Output berikut disalin dari respons LLM aktual; spasi non-breaking dan baris bar
 
 Konfigurasi ini dipilih untuk PDF dan dua pertanyaan ini: chunk size 120 satu-satunya yang menjawab Q1, TOP_K 4 menjaga context sedang dan Q2 terjawab benar, temperature 0.2 menghasilkan fakta yang konsisten, serta overlap 20 menjaga sambungan antar-chunk. Pilihan ini bukan konfigurasi terbaik universal.
 
+Setelah eksperimen selesai, konfigurasi final juga diterapkan kembali di server aplikasi dan PDF diunggah/di-ingest ulang. Endpoint `/ingest` melaporkan **9 halaman terbaca** dan **23 chunks stored**. Kedua pertanyaan berhasil dijawab melalui `/ask`: Q1 menghasilkan 47,8% (halaman 10; similarity 0.7315) dan Q2 menghasilkan 4,05/5 (halaman 4; similarity 0.8205). Koleksi final lokal disimpan di `qdrant_data/`, yang tidak dimasukkan ke repository.
+
 ## Refleksi Pribadi - Draf untuk Ditinjau
 
 - **Bagian yang paling berbeda dari dugaan:** skor similarity chunk teratas tertinggi tidak otomatis menghasilkan jawaban benar. Chunk size 50 mendapat skor tinggi untuk Q1 tetapi LLM tidak menemukan jawabannya; ukuran 120 berhasil.
@@ -684,5 +686,5 @@ Refleksi ini disusun dari hasil eksperimen aktual pada PDF yang dipakai. Silakan
 ## Penggunaan AI
 
 - **AI tools yang digunakan:** AI assistant.
-- **Bantuan AI:** membantu membaca topik PDF, menyiapkan pertanyaan, menjalankan variasi parameter pada pipeline RAG, mencatat actual output dan metrik, serta menyusun dokumentasi dan interpretasi.
+- **Bantuan AI:** membantu membaca topik PDF dan menyiapkan pertanyaan; menjalankan server aplikasi, upload PDF serta pertanyaan melalui endpoint API untuk setiap variasi; mencatat actual output dan metrik; lalu menyusun dokumentasi dan interpretasi.
 - **Bagian yang harus diverifikasi sendiri:** meninjau kesimpulan dan refleksi sebelum dikumpulkan. API key tidak dimasukkan ke repository atau chat.

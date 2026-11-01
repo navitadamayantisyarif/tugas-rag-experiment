@@ -1,6 +1,7 @@
 from groq import AsyncGroq
 from config import GROQ_MODEL
 client = AsyncGroq()
+TEMPERATURE = 0.2
 async def generate_text(
     system_prompt: str,
     user_prompt: str,
@@ -17,6 +18,6 @@ async def generate_text(
                 "content": user_prompt,
             },
         ],
-        temperature=0.2,
+        temperature=TEMPERATURE,
     )
     return response.choices[0].message.content or ""
