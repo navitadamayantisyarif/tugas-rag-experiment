@@ -674,14 +674,12 @@ Konfigurasi ini dipilih untuk PDF dan dua pertanyaan ini: chunk size 120 satu-sa
 
 Setelah eksperimen selesai, konfigurasi final juga diterapkan kembali di server aplikasi dan PDF diunggah/di-ingest ulang. Endpoint `/ingest` melaporkan **9 halaman terbaca** dan **23 chunks stored**. Kedua pertanyaan berhasil dijawab melalui `/ask`: Q1 menghasilkan 47,8% (halaman 10; similarity 0.7315) dan Q2 menghasilkan 4,05/5 (halaman 4; similarity 0.8205). Koleksi final lokal disimpan di `qdrant_data/`, yang tidak dimasukkan ke repository.
 
-## Refleksi Pribadi - Draf untuk Ditinjau
+## Personal Reflection
 
-- **Bagian yang paling berbeda dari dugaan:** skor similarity chunk teratas tertinggi tidak otomatis menghasilkan jawaban benar. Chunk size 50 mendapat skor tinggi untuk Q1 tetapi LLM tidak menemukan jawabannya; ukuran 120 berhasil.
-- **Parameter yang ternyata berpengaruh:** chunk size mengubah jumlah potongan dan apakah informasi Q1 sampai ke context generation. Overlap 40 menambah jumlah chunk, tetapi tidak memperbaiki jawaban Q1 pada percobaan ini.
-- **Hubungan retrieval dan generation:** retrieval menentukan potongan bukti yang masuk ke context; generation menyusun jawaban menggunakan bukti tersebut. Generation tidak dapat mengoreksi fakta yang tidak berhasil diambil dan dapat menghasilkan jawaban kurang relevan bila context tidak sesuai.
-- **Eksperimen lanjutan:** membandingkan `TOP_K`, menguji pertanyaan dengan tipe berbeda, dan mengevaluasi retrieval terpisah dari kualitas jawaban generation.
-
-Refleksi ini disusun dari hasil eksperimen aktual pada PDF yang dipakai. Silakan sesuaikan dengan pendapat pribadi sebelum dikumpulkan.
+- **Hasil yang paling berbeda dari dugaan:** similarity score tertinggi tidak otomatis menghasilkan jawaban yang benar. Chunk size 50 memiliki skor Q1 tertinggi (0.7879), tetapi jawaban tidak ditemukan; dengan chunk size 120, model menjawab 47,8% dengan sumber halaman 10.
+- **Parameter yang pengaruhnya paling terlihat:** chunk size mengubah jumlah chunk dari 67 menjadi 23 dan memengaruhi apakah bukti Q1 tersedia bersama dalam context generation. Overlap 40 menambah jumlah chunk, tetapi tidak mengubah jawaban Q1 pada pengujian ini.
+- **Hubungan retrieval dan generation:** retrieval memilih potongan bukti dan menyusunnya menjadi context; generation menggunakan context itu untuk merumuskan jawaban. Jika bukti tidak ikut terambil atau konteksnya terpecah, model dapat menjawab bahwa informasi tidak ditemukan meskipun informasi tersebut ada di PDF.
+- **Eksperimen lanjutan:** mencoba pertanyaan yang menuntut sintesis beberapa halaman, menguji variasi TOP_K dengan pertanyaan lain, dan memisahkan evaluasi relevansi retrieval dari ketepatan jawaban generation.
 
 ## Penggunaan AI
 
