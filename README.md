@@ -611,11 +611,11 @@ Output berikut disalin dari respons endpoint `/ask` pada aplikasi Uvicorn; spasi
 | Nilai | Pertanyaan | Actual output |
 | --- | --- | --- |
 | 0.0 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 0.0 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
+| 0.0 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
 | 0.2 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 0.2 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** poin (kenaikan +69,2% dibanding baseline)【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
+| 0.2 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** poin (kenaikan +69,2% dibanding baseline)【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
 | 0.8 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 0.8 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** skor (kenaikan +69,2% dibanding baseline)【Laporan EDA Clevora.docx.pdf, Page 4】. |
+| 0.8 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** skor (kenaikan +69,2% dibanding baseline)【Laporan EDA Clevora.docx.pdf \| Page 4】. |
 
 **Experiment 2 - TOP_K**
 
@@ -624,19 +624,19 @@ Output berikut disalin dari respons endpoint `/ask` pada aplikasi Uvicorn; spasi
 | 1 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
 | 1 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Laporan EDA Clevora.docx.pdf, hal 4】. |
 | 4 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 4 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
+| 4 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
 | 8 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 8 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
+| 8 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
 
 **Experiment 3 - Chunk Size** (`CHUNK_OVERLAP = 20`)
 
 | CHUNK_SIZE | Pertanyaan | Actual output |
 | ---: | --- | --- |
 | 50 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 50 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
+| 50 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Source: Laporan EDA Clevora.docx.pdf \| Page 4】. |
 | 100 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
 | 100 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00**【Laporan EDA Clevora.docx.pdf, hal 4】. |
-| 120 | Q1 | 47,8% responden menyatakan proses ulasan manual di Google Maps terlalu merepotkan. (Sumber: Laporan EDA Clevora, halaman 10) |
+| 120 | Q1 | 47,8% responden menyatakan proses manual Google Maps terlalu merepotkan untuk memberikan ulasan. (Sumber: Laporan EDA Clevora, halaman 10) |
 | 120 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 
 **Experiment 4 - Chunk Overlap** (`CHUNK_SIZE = 100`)
@@ -646,9 +646,9 @@ Output berikut disalin dari respons endpoint `/ask` pada aplikasi Uvicorn; spasi
 | 0 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
 | 0 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
 | 20 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 20 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** skor (kenaikan +69,2% dibanding baseline)【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
+| 20 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan ketika tersedia Tap NFC atau Scan QR di kasir adalah **4,05 dari 5,00** skor (kenaikan +69,2% dibanding baseline)【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
 | 40 | Q1 | Jawaban tidak ditemukan dalam dokumen yang diunggah. |
-| 40 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00**【Source: Laporan EDA Clevora.docx.pdf, Page 4】. |
+| 40 | Q2 | Rata-rata kesediaan pelanggan memberikan ulasan bila tersedia Tap NFC atau Scan QR di kasir adalah **4,05 / 5,00** poin 【Source: Laporan EDA Clevora.docx.pdf \| Page: 4】. |
 
 ## Kesimpulan dan Jawaban Pertanyaan
 
@@ -683,6 +683,6 @@ Setelah eksperimen selesai, konfigurasi final juga diterapkan kembali di server 
 
 ## Penggunaan AI
 
-- **AI tools yang digunakan:** AI assistant.
-- **Bantuan AI:** membantu membaca topik PDF dan menyiapkan pertanyaan; menjalankan server aplikasi, upload PDF serta pertanyaan melalui endpoint API untuk setiap variasi; mencatat actual output dan metrik; lalu menyusun dokumentasi dan interpretasi.
-- **Bagian yang harus diverifikasi sendiri:** meninjau kesimpulan dan refleksi sebelum dikumpulkan. API key tidak dimasukkan ke repository atau chat.
+- **AI tools yang digunakan:** AI assistant melalui Copilot di VS Code; model generation yang diuji di aplikasi adalah `openai/gpt-oss-120b` melalui Groq.
+- **Bantuan AI:** membantu membaca PDF dan merumuskan pertanyaan; menjalankan server aplikasi, mengunggah PDF, menjalankan seluruh variasi melalui endpoint API, mencatat actual output/metrik, dan menyusun interpretasi serta laporan.
+- **Eksperimen dan evaluasi mandiri:** pengguna menyiapkan proyek, PDF, dan kredensial lokal. Eksekusi variasi serta perbandingan hasil terhadap isi PDF dibantu AI; seluruh jawaban, skor, dan jumlah chunk dicatat dari aplikasi. API key tidak dimasukkan ke repository atau chat.
